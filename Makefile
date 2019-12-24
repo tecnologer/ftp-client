@@ -1,5 +1,5 @@
 binName=ftpclient
-formatVersion=+.%H%M%S
+formatVersion=+.%H%M
 version=`git describe --tags`
 
 windows:
