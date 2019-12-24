@@ -1,7 +1,9 @@
 binName=ftpclient
+formatVersion=+.%H%M%S
+version=`git describe --tags`
 
 windows:
-	go build -o "$(binName).exe"
+	go build -ldflags "-X main.minversion=`date -u $(formatVersion)` -X main.version=$(version)" -o "$(binName).exe"
 
 linux:
-	go build -o $(binName)
+	go build -ldflags "-X main.minversion=`date -u $(formatVersion)` -X main.version=$(version)" -o $(binName)

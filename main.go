@@ -23,6 +23,9 @@ var (
 	c          *ftp.ServerConn
 	fileCount  int
 	totalBytes int64
+	reqVersion bool
+	minversion string
+	version    string
 )
 
 func init() {
@@ -31,11 +34,16 @@ func init() {
 	flag.StringVar(&password, "pwd", "", "password for credentials")
 	flag.IntVar(&port, "port", 21, "port to connect")
 	flag.StringVar(&startPath, "path", "/", "location of files in the server")
+	flag.BoolVar(&reqVersion, "version", false, "returns the current version")
 
 	flag.Parse()
 }
 
 func main() {
+	if reqVersion {
+		logrus.Info(version + minversion)
+		return
+	}
 	var err error
 	err = validateFlags()
 	if err != nil {
