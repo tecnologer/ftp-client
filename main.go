@@ -26,9 +26,9 @@ var (
 )
 
 func init() {
-	flag.StringVar(&username, "user", "", "(Required) username to login in the server")
+	flag.StringVar(&username, "user", "", "(Required) username for credentials")
 	flag.StringVar(&host, "host", "", "(Required) URL to the server")
-	flag.StringVar(&password, "pwd", "", "password to login in the server")
+	flag.StringVar(&password, "pwd", "", "password for credentials")
 	flag.IntVar(&port, "port", 21, "port to connect")
 	flag.StringVar(&startPath, "path", "/", "location of files in the server")
 
