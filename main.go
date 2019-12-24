@@ -9,15 +9,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var username string
-var password string
+var (
+	username string
+	password string
+	url      string
+	port     int
+)
 
 func init() {
-	flag.StringVar(&username, "name", "", "username to login in the server")
-	flag.StringVar(&username, "u", "", "username to login in the server")
-
-	flag.StringVar(&password, "password", "", "password to login in the server")
-	flag.StringVar(&password, "p", "", "password to login in the server")
+	flag.StringVar(&username, "user", "", "username to login in the server")
+	flag.StringVar(&password, "pwd", "", "password to login in the server")
+	flag.StringVar(&url, "url", "", "URL to the server")
+	flag.IntVar(&port, "port", 21, "port to connect")
 
 	flag.Parse()
 }

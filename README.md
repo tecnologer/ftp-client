@@ -2,6 +2,6 @@
 
 FTP Client to create backups
 
-## Usage 
+## Usage
 
-`ftpclient -u <username> -p <password>`
+`ftpclient -u <username> <-pwd <password>> <-url <ftp-url>> [-port <port>]`
