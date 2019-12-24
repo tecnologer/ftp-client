@@ -26,11 +26,11 @@ var (
 )
 
 func init() {
-	flag.StringVar(&username, "user", "", "username to login in the server")
+	flag.StringVar(&username, "user", "", "(Required) username to login in the server")
+	flag.StringVar(&host, "host", "", "(Required) URL to the server")
 	flag.StringVar(&password, "pwd", "", "password to login in the server")
-	flag.StringVar(&host, "host", "", "URL to the server")
 	flag.IntVar(&port, "port", 21, "port to connect")
-	flag.StringVar(&startPath, "path", "/69518", "location of files in the server")
+	flag.StringVar(&startPath, "path", "/", "location of files in the server")
 
 	flag.Parse()
 }
@@ -39,6 +39,7 @@ func main() {
 	var err error
 	err = validateFlags()
 	if err != nil {
+		flag.PrintDefaults()
 		logrus.Fatal(err)
 	}
 
@@ -135,16 +136,11 @@ func validateFlags() error {
 		return fmt.Errorf("username is required")
 	}
 
-	if password == "" {
-		return fmt.Errorf("password is required")
-	}
-
 	if host == "" {
 		return fmt.Errorf("host is required")
 	}
 
 	return nil
-
 }
 
 func byteCountDecimal(b int64) string {
