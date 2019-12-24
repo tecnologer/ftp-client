@@ -15,13 +15,14 @@ import (
 )
 
 var (
-	username  string
-	password  string
-	host      string
-	port      int
-	startPath string
-	c         *ftp.ServerConn
-	fileCount int
+	username   string
+	password   string
+	host       string
+	port       int
+	startPath  string
+	c          *ftp.ServerConn
+	fileCount  int
+	totalBytes int64
 )
 
 func init() {
@@ -53,33 +54,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// err = writeFile("/69518/plugins/Modern-LWC-2.1.5.jar")
-	// if err != nil {
-	// 	logrus.Fatal(err)
-	// }
 	startTime := time.Now()
 	defer func() {
-		fmt.Printf("\n%d downloaded files in %v", fileCount, time.Since(startTime))
+		fmt.Printf("\n%s downloaded (%d files)  in %v", byteCountDecimal(totalBytes), fileCount, time.Since(startTime))
 	}()
+
 	if err = downloadContent(startPath); err != nil {
 		logrus.Fatal(err)
 	}
-	// content, err := c.List("/69518")
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// for _, f := range content {
-	// 	println(f.Name)
-	// }
-
-	// r, err := c.Retr("test-file.txt")
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// buf, err := ioutil.ReadAll(r)
-	// println(string(buf))
 
 	if err := c.Quit(); err != nil {
 		log.Fatal(err)
@@ -136,7 +118,7 @@ func writeFile(filename string) error {
 	if err != nil {
 		return err
 	}
-
+	totalBytes += int64(len(buf))
 	err = ioutil.WriteFile("."+filename, buf, 0644)
 
 	if err != nil {
@@ -163,4 +145,17 @@ func validateFlags() error {
 
 	return nil
 
+}
+
+func byteCountDecimal(b int64) string {
+	const unit = 1000
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
 }
