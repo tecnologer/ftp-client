@@ -10,22 +10,24 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cheggaaa/pb"
 	"github.com/jlaffaye/ftp"
 	"github.com/sirupsen/logrus"
 )
 
 var (
-	username   string
-	password   string
-	host       string
-	port       int
-	startPath  string
-	c          *ftp.ServerConn
-	fileCount  int
-	totalBytes int64
-	reqVersion bool
-	minversion string
-	version    string
+	username        string
+	password        string
+	host            string
+	port            int
+	startPath       string
+	c               *ftp.ServerConn
+	fileCount       int
+	totalBytes      int64
+	reqVersion      bool
+	minversion      string
+	version         string
+	filesToDownload []string
 )
 
 func init() {
@@ -44,6 +46,9 @@ func main() {
 		logrus.Info(version + minversion)
 		return
 	}
+
+	filesToDownload = make([]string, 0, 2)
+
 	var err error
 	err = validateFlags()
 	if err != nil {
@@ -66,14 +71,21 @@ func main() {
 	startTime := time.Now()
 	defer func() {
 		fmt.Printf("\n%s downloaded (%d files)  in %v", byteCountDecimal(totalBytes), fileCount, time.Since(startTime))
+		fmt.Println("\nPress Enter to exit...")
+		fmt.Scanf("\n")
 	}()
 
+	logrus.Info("fetching information... please wait!")
 	if err = downloadContent(startPath); err != nil {
-		logrus.Fatal(err)
+		logrus.Error(err)
+	}
+
+	if err = downloadMarkedFiles(); err != nil {
+		logrus.Error(err)
 	}
 
 	if err := c.Quit(); err != nil {
-		log.Fatal(err)
+		logrus.Error(err)
 	}
 }
 
@@ -92,7 +104,7 @@ func downloadContent(path string) error {
 		}
 
 		if element.Type == ftp.EntryTypeFolder {
-			logrus.Info("new folder found ", elementPath)
+			// logrus.Info("new folder found ", elementPath)
 			if err = downloadContent(elementPath); err != nil {
 				return err
 			}
@@ -102,15 +114,46 @@ func downloadContent(path string) error {
 			continue
 		}
 
-		if err = writeFile(elementPath); err != nil {
-			return err
-		}
+		markFileToDownload(elementPath)
+
+		// if err = writeFile(elementPath); err != nil {
+		// 	return err
+		// }
 	}
 	return nil
 }
 
+func markFileToDownload(filename string) {
+	if filename == "" {
+		return
+	}
+	filesToDownload = append(filesToDownload, filename)
+}
+
+func downloadMarkedFiles() error {
+	count := len(filesToDownload)
+
+	if count == 0 {
+		return fmt.Errorf("no files to download")
+	}
+
+	fmt.Printf("\n >>>> found %d files <<<<\n\n", count)
+
+	bar := pb.StartNew(count)
+	defer bar.Finish()
+
+	for _, file := range filesToDownload {
+		if err := writeFile(file); err != nil {
+			return err
+		}
+		bar.Increment()
+	}
+
+	return nil
+}
+
 func writeFile(filename string) error {
-	logrus.Info("downloading file ", filename)
+	// logrus.Info("downloading file ", filename)
 	r, err := c.Retr(filename)
 	if err != nil {
 		return err
@@ -134,7 +177,7 @@ func writeFile(filename string) error {
 		return err
 	}
 
-	logrus.Info("file ", filename, " download sucessfully")
+	// logrus.Info("file ", filename, " download sucessfully")
 	fileCount++
 	return nil
 }
