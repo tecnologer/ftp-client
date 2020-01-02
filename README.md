@@ -14,7 +14,7 @@ FTP Client to create backups
 
 ## Usage
 
-`ftpclient[.exe] <-user <username>> <-url <ftp-url>> [-pwd [password]] [-port <port>] [-path <path>]`
+`ftpclient[.exe] <-user <username>> <-host <ftp-url>> [-pwd [password]] [-port <port>] [-path <path>]`
 
 ```txt
  -host string
