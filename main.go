@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -47,32 +46,33 @@ func main() {
 		return
 	}
 
+	//wait key input to close
+	defer wait()
+
 	filesToDownload = make([]string, 0, 2)
 
 	var err error
 	err = validateFlags()
 	if err != nil {
 		flag.PrintDefaults()
-		logrus.Fatal(err)
+		logrus.Error(err)
 	}
 
 	url := fmt.Sprintf("%s:%d", host, port)
 
 	c, err = ftp.Dial(url, ftp.DialWithTimeout(5*time.Second))
 	if err != nil {
-		logrus.Fatal(err)
+		logrus.Error(err)
 	}
 
 	err = c.Login(username, password)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Error(err)
 	}
 
 	startTime := time.Now()
 	defer func() {
-		fmt.Printf("\n%s downloaded (%d files)  in %v", byteCountDecimal(totalBytes), fileCount, time.Since(startTime))
-		fmt.Println("\nPress Enter to exit...")
-		fmt.Scanf("\n")
+		fmt.Printf("\n%s downloaded (%d files)  in %v", byteCountDecimal(totalBytes), fileCount, time.Since(startTime))		
 	}()
 
 	logrus.Info("fetching information... please wait!")
@@ -205,4 +205,9 @@ func byteCountDecimal(b int64) string {
 		exp++
 	}
 	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
+}
+
+func wait(){
+	fmt.Println("\nPress Enter to exit...")
+	fmt.Scanf("\n")
 }
