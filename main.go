@@ -8,7 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
+	
+	"github.com/gen2brain/beeep"
 	"github.com/cheggaaa/pb"
 	"github.com/jlaffaye/ftp"
 	"github.com/sirupsen/logrus"
@@ -24,6 +25,7 @@ var (
 	fileCount       int
 	totalBytes      int64
 	reqVersion      bool
+	needWait      bool
 	minversion      string
 	version         string
 	filesToDownload []string
@@ -36,6 +38,7 @@ func init() {
 	flag.IntVar(&port, "port", 21, "port to connect")
 	flag.StringVar(&startPath, "path", "/", "location of files in the server")
 	flag.BoolVar(&reqVersion, "version", false, "returns the current version")
+	flag.BoolVar(&needWait, "wait", false, "prevents the program exit on finish process")
 
 	flag.Parse()
 }
@@ -46,9 +49,11 @@ func main() {
 		return
 	}
 
-	//wait key input to close
-	defer wait()
-
+	if needWait {
+		//wait key input to close
+		defer wait()
+	}
+	
 	filesToDownload = make([]string, 0, 2)
 
 	var err error
@@ -60,19 +65,24 @@ func main() {
 
 	url := fmt.Sprintf("%s:%d", host, port)
 
+	
 	c, err = ftp.Dial(url, ftp.DialWithTimeout(5*time.Second))
 	if err != nil {
 		logrus.Error(err)
+		return
 	}
 
 	err = c.Login(username, password)
 	if err != nil {
 		logrus.Error(err)
+		return
 	}
 
 	startTime := time.Now()
 	defer func() {
-		fmt.Printf("\n%s downloaded (%d files)  in %v", byteCountDecimal(totalBytes), fileCount, time.Since(startTime))		
+		msg := fmt.Sprintf("\n%s downloaded (%d files)  in %v", byteCountDecimal(totalBytes), fileCount, time.Since(startTime))
+		fmt.Printf(msg)
+		_ = beeep.Notify("Donwload Complete", msg, "")
 	}()
 
 	logrus.Info("fetching information... please wait!")
