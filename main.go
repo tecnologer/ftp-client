@@ -60,23 +60,25 @@ func main() {
 	err = validateFlags()
 	if err != nil {
 		flag.PrintDefaults()
-		logrus.Error(err)
+		showError(err)
 	}
 
 	url := fmt.Sprintf("%s:%d", host, port)
 
-	
+	logrus.Infof("connecting to %s", url)
 	c, err = ftp.Dial(url, ftp.DialWithTimeout(5*time.Second))
 	if err != nil {
-		logrus.Error(err)
+		showError(err)
 		return
 	}
 
 	err = c.Login(username, password)
 	if err != nil {
-		logrus.Error(err)
+		showError(err)
 		return
 	}
+
+	logrus.Info("connected")
 
 	startTime := time.Now()
 	defer func() {
@@ -87,16 +89,24 @@ func main() {
 
 	logrus.Info("fetching information... please wait!")
 	if err = downloadContent(startPath); err != nil {
-		logrus.Error(err)
+		showError(err)
+		return
 	}
 
 	if err = downloadMarkedFiles(); err != nil {
-		logrus.Error(err)
+		showError(err)
+		return
 	}
 
 	if err := c.Quit(); err != nil {
-		logrus.Error(err)
+		showError(err)
+		return
 	}
+}
+
+func showError(err error) {
+	logrus.Error(err)
+	_ = beeep.Notify("Error", fmt.Sprintf("%v", err), "")
 }
 
 func downloadContent(path string) error {
