@@ -11,13 +11,14 @@ FTP Client to create backups
   - Native: `go build -o ftpclient`
   - With Makefile: `make linux`
 
+For make binary for both OS, just use `make` or `make both`
 
 ## Usage
 
-`ftpclient[.exe] <-user <username>> <-host <ftp-url>> [-pwd [password]] [-port <port>] [-path <path>]`
+`./ftpclient[.exe] <-user <username>> <-host <ftp-url>> [-pwd [password]] [-port <port>] [-path <path>] [-wait]`
 
 ```txt
- -host string
+   -host string
         (Required) URL to the server
   -path string
         location of files in the server (default "/")
@@ -27,5 +28,15 @@ FTP Client to create backups
         password for credentials
   -user string
         (Required) username for credentials
+  -version
+        returns the current version
+  -wait
+        prevents the program exit on finished process
 
 ```
+
+## Check the version
+
+`./ftpclient[.exe] -version`
+
+> INFO[0000] 0.1.4.202001 
