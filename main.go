@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	
-	"github.com/gen2brain/beeep"
+
 	"github.com/cheggaaa/pb"
+	"github.com/gen2brain/beeep"
 	"github.com/jlaffaye/ftp"
 	"github.com/sirupsen/logrus"
 )
@@ -25,7 +25,7 @@ var (
 	fileCount       int
 	totalBytes      int64
 	reqVersion      bool
-	needWait      bool
+	needWait        bool
 	minversion      string
 	version         string
 	filesToDownload []string
@@ -53,7 +53,7 @@ func main() {
 		//wait key input to close
 		defer wait()
 	}
-	
+
 	filesToDownload = make([]string, 0, 2)
 
 	var err error
@@ -227,7 +227,7 @@ func byteCountDecimal(b int64) string {
 	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
 }
 
-func wait(){
+func wait() {
 	fmt.Println("\nPress Enter to exit...")
 	fmt.Scanf("\n")
 }
