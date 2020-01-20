@@ -120,7 +120,7 @@ func (c *Config) Validate() error {
 
 //Save saves the config information into settings
 func (c *Config) Save() error {
-	file, err := json.MarshalIndent(*c, "", " ")
+	file, err := json.MarshalIndent(*c, "", "\t")
 
 	if err != nil {
 		return err
