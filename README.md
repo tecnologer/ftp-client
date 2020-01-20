@@ -15,7 +15,7 @@ For make binary for both OS, just use `make` or `make both`
 
 ## Usage
 
-`./ftpclient[.exe] <-user <username>> <-host <ftp-url>> [-pwd [password]] [-port <port>] [-path <path>] [-wait]`
+`./ftpclient[.exe] <-user <username>> <-host <ftp-url>> [-pwd [password]] [-port <port>] [-path <path>] [-wait] [-store]`
 
 ```txt
    -host string
