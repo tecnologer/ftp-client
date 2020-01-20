@@ -26,12 +26,14 @@ For make binary for both OS, just use `make` or `make both`
         port to connect (default 21)
   -pwd string
         password for credentials
+  -store
+        store flags config into settings file
   -user string
         (Required) username for credentials
   -version
         returns the current version
   -wait
-        prevents the program exit on finished process
+        prevents the program exit on finish process
 
 ```
 
@@ -47,3 +49,4 @@ For make binary for both OS, just use `make` or `make both`
 - [x] Settings file
 - [ ] Improve download process
 - [ ] Encode password in settings file
+- [ ] Test settings file executing from shortcut
