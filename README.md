@@ -41,7 +41,7 @@ For make binary for both OS, just use `make` or `make both`
 
 > INFO[0000] 0.1.4.202001 
 
-# TODO
+## TODO
 
 - [x] Progress bar
 - [ ] Settings file
