@@ -44,5 +44,6 @@ For make binary for both OS, just use `make` or `make both`
 ## TODO
 
 - [x] Progress bar
-- [ ] Settings file
+- [x] Settings file
 - [ ] Improve download process
+- [ ] Encode password in settings file
