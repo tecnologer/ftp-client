@@ -31,6 +31,13 @@ func Load() (config *Config) {
 		if err != nil {
 			logrus.WithError(err).Warn("loading settings from file")
 		}
+
+		if config == nil {
+			config = &Config{
+				FTP: NewFTP("", ""),
+				Env: NewEnv(),
+			}
+		}
 	} else {
 		config = &Config{
 			FTP: &FTP{
