@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -13,43 +12,30 @@ import (
 	"github.com/gen2brain/beeep"
 	"github.com/jlaffaye/ftp"
 	"github.com/sirupsen/logrus"
+	s "github.com/tecnologer/ftp-client/settings"
 )
 
 var (
-	username        string
-	password        string
-	host            string
-	port            int
-	startPath       string
 	c               *ftp.ServerConn
 	fileCount       int
 	totalBytes      int64
-	reqVersion      bool
-	needWait        bool
 	minversion      string
 	version         string
 	filesToDownload []string
+	config          *s.Config
 )
 
 func init() {
-	flag.StringVar(&username, "user", "", "(Required) username for credentials")
-	flag.StringVar(&host, "host", "", "(Required) URL to the server")
-	flag.StringVar(&password, "pwd", "", "password for credentials")
-	flag.IntVar(&port, "port", 21, "port to connect")
-	flag.StringVar(&startPath, "path", "/", "location of files in the server")
-	flag.BoolVar(&reqVersion, "version", false, "returns the current version")
-	flag.BoolVar(&needWait, "wait", false, "prevents the program exit on finish process")
-
-	flag.Parse()
+	config = s.Load()
 }
 
 func main() {
-	if reqVersion {
+	if config.Env.ReqVersion {
 		logrus.Info(version + minversion)
 		return
 	}
 
-	if needWait {
+	if config.Env.NeedWait {
 		//wait key input to close
 		defer wait()
 	}
@@ -57,13 +43,13 @@ func main() {
 	filesToDownload = make([]string, 0, 2)
 
 	var err error
-	err = validateFlags()
+	err = config.Validate()
 	if err != nil {
-		flag.PrintDefaults()
 		showError(err)
+		return
 	}
 
-	url := fmt.Sprintf("%s:%d", host, port)
+	url := fmt.Sprintf("%s:%d", config.FTP.Host, config.FTP.Port)
 
 	logrus.Infof("connecting to %s", url)
 	c, err = ftp.Dial(url, ftp.DialWithTimeout(5*time.Second))
@@ -72,7 +58,7 @@ func main() {
 		return
 	}
 
-	err = c.Login(username, password)
+	err = c.Login(config.FTP.Username, config.FTP.Password)
 	if err != nil {
 		showError(err)
 		return
@@ -88,7 +74,7 @@ func main() {
 	}()
 
 	logrus.Info("fetching information... please wait!")
-	if err = downloadContent(startPath); err != nil {
+	if err = downloadContent(config.FTP.RootPath); err != nil {
 		showError(err)
 		return
 	}
@@ -199,18 +185,6 @@ func writeFile(filename string) error {
 
 	// logrus.Info("file ", filename, " download sucessfully")
 	fileCount++
-	return nil
-}
-
-func validateFlags() error {
-	if username == "" {
-		return fmt.Errorf("username is required")
-	}
-
-	if host == "" {
-		return fmt.Errorf("host is required")
-	}
-
 	return nil
 }
 
