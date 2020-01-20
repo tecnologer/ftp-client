@@ -25,7 +25,7 @@ func Load() (config *Config) {
 	var err error
 	err = validateFlags()
 
-	if err != nil {
+	if err != nil && !reqVersion {
 		config, err = readSettings()
 
 		if err != nil {
