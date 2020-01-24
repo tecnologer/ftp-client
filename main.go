@@ -2,13 +2,8 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
-	"github.com/cheggaaa/pb"
 	"github.com/gen2brain/beeep"
 	"github.com/jlaffaye/ftp"
 	"github.com/sirupsen/logrus"
@@ -16,13 +11,12 @@ import (
 )
 
 var (
-	c               *ftp.ServerConn
-	fileCount       int
-	totalBytes      int64
-	minversion      string
-	version         string
-	filesToDownload []string
-	config          *s.Config
+	c          *ftp.ServerConn
+	fileCount  int
+	totalBytes int64
+	minversion string
+	version    string
+	config     *s.Config
 )
 
 func init() {
@@ -40,7 +34,7 @@ func main() {
 		defer wait()
 	}
 
-	filesToDownload = make([]string, 0, 2)
+	// defer resetFiles()
 
 	var err error
 	err = config.Validate()
@@ -95,97 +89,9 @@ func showError(err error) {
 	_ = beeep.Notify("Error", fmt.Sprintf("%v", err), "")
 }
 
-func downloadContent(path string) error {
-	content, err := c.List(path)
-
-	if err != nil {
-		return err
-	}
-
-	for _, element := range content {
-		elementPath := fmt.Sprintf("%s/%s", path, element.Name)
-
-		if strings.HasSuffix(elementPath, "..") || strings.HasSuffix(elementPath, ".") {
-			continue
-		}
-
-		if element.Type == ftp.EntryTypeFolder {
-			// logrus.Info("new folder found ", elementPath)
-			if err = downloadContent(elementPath); err != nil {
-				return err
-			}
-		}
-
-		if element.Type != ftp.EntryTypeFile {
-			continue
-		}
-
-		markFileToDownload(elementPath)
-
-		// if err = writeFile(elementPath); err != nil {
-		// 	return err
-		// }
-	}
-	return nil
-}
-
-func markFileToDownload(filename string) {
-	if filename == "" {
-		return
-	}
-	filesToDownload = append(filesToDownload, filename)
-}
-
-func downloadMarkedFiles() error {
-	count := len(filesToDownload)
-
-	if count == 0 {
-		return fmt.Errorf("no files to download")
-	}
-
-	fmt.Printf("\n >>>> found %d files <<<<\n\n", count)
-
-	bar := pb.StartNew(count)
-	defer bar.Finish()
-
-	for _, file := range filesToDownload {
-		if err := writeFile(file); err != nil {
-			return err
-		}
-		bar.Increment()
-	}
-
-	return nil
-}
-
-func writeFile(filename string) error {
-	// logrus.Info("downloading file ", filename)
-	r, err := c.Retr(filename)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	buf, err := ioutil.ReadAll(r)
-
-	if err != nil {
-		return err
-	}
-
-	err = os.MkdirAll(filepath.Dir("."+filename), 0700)
-	if err != nil {
-		return err
-	}
-	totalBytes += int64(len(buf))
-	err = ioutil.WriteFile("."+filename, buf, 0644)
-
-	if err != nil {
-		return err
-	}
-
-	// logrus.Info("file ", filename, " download sucessfully")
-	fileCount++
-	return nil
+func wait() {
+	fmt.Println("\nPress Enter to exit...")
+	fmt.Scanf("\n")
 }
 
 func byteCountDecimal(b int64) string {
@@ -199,9 +105,4 @@ func byteCountDecimal(b int64) string {
 		exp++
 	}
 	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
-}
-
-func wait() {
-	fmt.Println("\nPress Enter to exit...")
-	fmt.Scanf("\n")
 }
