@@ -7,9 +7,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cheggaaa/pb"
+	"github.com/sirupsen/logrus"
+
+	"github.com/cheggaaa/pb/v3"
 	"github.com/jlaffaye/ftp"
 )
+
+type fileError struct {
+	err  error
+	file string
+}
 
 func downloadContent(path string) error {
 	content, err := c.List(path)
@@ -54,29 +61,37 @@ func downloadMarkedFiles() error {
 
 	fmt.Printf("\n >>>> found %d files <<<<\n\n", count)
 
-	bar := pb.StartNew(count)
+	bar := getProgressBar(count)
 	defer bar.Finish()
 
 	files := make(chan string)
-	results := make(chan error)
+	results := make(chan *fileError)
 
 	for w := 1; w <= 3; w++ {
-		go worker(w, jobs, results)
+		go worker(w, files, results)
 	}
 
 	for filesToDownload.HasFiles() {
-		// if err := writeFile(filesToDownload.GetNext()); err != nil {
-		// 	return err
-		// }
+		files <- filesToDownload.GetNext()
+		select {
+		case result := <-results:
+			if result.err != nil {
+				logrus.Warningf("error donwloading file %s. Error: %v\n", result.file, result.err)
+			}
+		}
 		bar.Increment()
 	}
+	close(files)
 
 	return nil
 }
 
-func worker(id int, files <-chan string, results chan<- error) {
+func worker(id int, files <-chan string, results chan<- *fileError) {
 	for file := range files {
-		results <- writeFile(file)
+		results <- &fileError{
+			err:  writeFile(file),
+			file: file,
+		}
 	}
 }
 
@@ -108,4 +123,25 @@ func writeFile(filename string) error {
 	// logrus.Info("file ", filename, " download sucessfully")
 	fileCount++
 	return nil
+}
+
+func getProgressBar(count int) *pb.ProgressBar {
+	// create bar
+	bar := pb.New(count)
+
+	// refresh info every second (default 200ms)
+	// bar.SetRefreshRate(time.Second)
+
+	// force set io.Writer, by default it's os.Stderr
+	bar.SetWriter(os.Stdout)
+
+	// bar will format numbers as bytes (B, KiB, MiB, etc)
+	// bar.Set(pb.Byte, true)
+
+	// bar use SI bytes prefix names (B, kB) instead of IEC (B, KiB)
+	bar.Set(pb.SIBytesPrefix, true)
+
+	// start bar
+	bar.Start()
+	return bar
 }
