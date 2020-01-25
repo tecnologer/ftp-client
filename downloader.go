@@ -14,9 +14,8 @@ import (
 )
 
 type fileError struct {
-	err   error
-	file  string
-	index int
+	err  error
+	file string
 }
 
 func downloadContent(path string) error {
@@ -65,50 +64,33 @@ func downloadMarkedFiles() error {
 	bar := getProgressBar(count)
 	defer bar.Finish()
 
-	filesChannel := []chan string{}
+	files := make(chan string)
 	results := make(chan *fileError)
 
 	for w := 1; w <= 3; w++ {
-		files := make(chan string)
-		filesChannel = append(filesChannel, files)
-		go worker(w, files, results, w-1, bar)
-	}
-
-	//initial workers
-	for _, ch := range filesChannel {
-		if !filesToDownload.HasFiles() {
-			break
-		}
-
-		ch <- filesToDownload.GetNext()
+		go worker(w, files, results)
 	}
 
 	for filesToDownload.HasFiles() {
+		files <- filesToDownload.GetNext()
 		select {
 		case result := <-results:
 			if result.err != nil {
-				logrus.Debugf("error donwloading file %s. Error: %v\n", result.file, result.err)
+				logrus.Warningf("error donwloading file %s. Error: %v\n", result.file, result.err)
 			}
-			filesChannel[result.index] <- filesToDownload.GetNext()
 		}
+		bar.Increment()
 	}
-
-	//close channels
-	for _, ch := range filesChannel {
-		close(ch)
-	}
+	close(files)
 
 	return nil
 }
 
-func worker(id int, files <-chan string, results chan<- *fileError, index int, bar *pb.ProgressBar) {
+func worker(id int, files <-chan string, results chan<- *fileError) {
 	for file := range files {
-		err := writeFile(file)
-		bar.Increment()
 		results <- &fileError{
-			err:   err,
-			file:  file,
-			index: index,
+			err:  writeFile(file),
+			file: file,
 		}
 	}
 }
