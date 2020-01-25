@@ -13,6 +13,11 @@ import (
 	"github.com/jlaffaye/ftp"
 )
 
+var (
+	totalBytes int64
+	fileCount  int64
+)
+
 type fileError struct {
 	err  error
 	file string
