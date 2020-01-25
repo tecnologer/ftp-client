@@ -12,15 +12,24 @@ import (
 
 var (
 	c          *ftp.ServerConn
-	fileCount  int
-	totalBytes int64
 	minversion string
 	version    string
 	config     *s.Config
+	debug      bool
 )
 
 func init() {
+	// flag.BoolVar(&debug, "-v", false, "enable debug log")
 	config = s.Load()
+	// flag.Parse()
+
+	// if debug {
+	logrus.SetLevel(logrus.DebugLevel)
+	// }
+
+	logrus.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
 }
 
 func main() {
@@ -62,12 +71,14 @@ func main() {
 
 	startTime := time.Now()
 	defer func() {
-		msg := fmt.Sprintf("\n%s downloaded (%d files)  in %v", byteCountDecimal(totalBytes), fileCount, time.Since(startTime))
+		msg := fmt.Sprintf("\n%s downloaded (%d files)  in %v\n", byteCountDecimal(totalBytes), fileCount, time.Since(startTime))
 		fmt.Printf(msg)
 		_ = beeep.Notify("Donwload Complete", msg, "")
 	}()
 
 	logrus.Info("fetching information... please wait!")
+	resetFiles()
+
 	if err = downloadContent(config.FTP.RootPath); err != nil {
 		showError(err)
 		return
