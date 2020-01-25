@@ -13,11 +13,6 @@ import (
 	"github.com/jlaffaye/ftp"
 )
 
-var (
-	fileCount  int
-	totalBytes int64
-)
-
 type fileError struct {
 	err   error
 	file  string
@@ -49,7 +44,7 @@ func downloadContent(path string) error {
 			continue
 		}
 
-		filesToDownload.add(elementPath)
+		filesToDownload.Add(elementPath)
 
 		// if err = writeFile(elementPath); err != nil {
 		// 	return err
@@ -59,7 +54,7 @@ func downloadContent(path string) error {
 }
 
 func downloadMarkedFiles() error {
-	count := filesToDownload.len()
+	count := filesToDownload.Len()
 
 	if count == 0 {
 		return fmt.Errorf("no files to download")
@@ -76,31 +71,25 @@ func downloadMarkedFiles() error {
 	for w := 1; w <= 3; w++ {
 		files := make(chan string)
 		filesChannel = append(filesChannel, files)
-		go worker(c, w, files, results, w-1, bar)
+		go worker(w, files, results, w-1, bar)
 	}
 
 	//initial workers
 	for _, ch := range filesChannel {
-		if !filesToDownload.hasFiles() {
+		if !filesToDownload.HasFiles() {
 			break
 		}
 
-		ch <- filesToDownload.getNext()
+		ch <- filesToDownload.GetNext()
 	}
 
-	for bar.Current() < int64(count) {
+	for filesToDownload.HasFiles() {
 		select {
 		case result := <-results:
 			if result.err != nil {
 				logrus.Debugf("error donwloading file %s. Error: %v\n", result.file, result.err)
 			}
-
-			file := filesToDownload.getNext()
-			if file == "" {
-				continue
-			}
-
-			filesChannel[result.index] <- file
+			filesChannel[result.index] <- filesToDownload.GetNext()
 		}
 	}
 
@@ -112,9 +101,9 @@ func downloadMarkedFiles() error {
 	return nil
 }
 
-func worker(c *ftp.ServerConn, id int, files <-chan string, results chan<- *fileError, index int, bar *pb.ProgressBar) {
+func worker(id int, files <-chan string, results chan<- *fileError, index int, bar *pb.ProgressBar) {
 	for file := range files {
-		err := writeFile(c, file)
+		err := writeFile(file)
 		bar.Increment()
 		results <- &fileError{
 			err:   err,
@@ -124,7 +113,7 @@ func worker(c *ftp.ServerConn, id int, files <-chan string, results chan<- *file
 	}
 }
 
-func writeFile(c *ftp.ServerConn, filename string) error {
+func writeFile(filename string) error {
 	// logrus.Info("downloading file ", filename)
 	r, err := c.Retr(filename)
 	if err != nil {

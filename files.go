@@ -19,23 +19,23 @@ func resetFiles() {
 		currentIndex: 0,
 	}
 }
-func (f *filesDownload) add(filename string) {
+func (f *filesDownload) Add(filename string) {
 	if filename == "" {
 		return
 	}
 	f.files = append(f.files, filename)
 }
 
-func (f *filesDownload) len() int {
+func (f *filesDownload) Len() int {
 	return len(f.files)
 }
 
-func (f *filesDownload) hasFiles() bool {
-	return f.currentIndex < f.len()
+func (f *filesDownload) HasFiles() bool {
+	return f.currentIndex < f.Len()
 }
 
-func (f *filesDownload) getNext() string {
-	if !f.hasFiles() {
+func (f *filesDownload) GetNext() string {
+	if !f.HasFiles() {
 		return ""
 	}
 	file := f.files[f.currentIndex]
