@@ -132,3 +132,8 @@ func (c *Config) Save() error {
 	}
 	return nil
 }
+
+//GetURL returns a url, joining host and port
+func (c *Config) GetURL() string {
+	return fmt.Sprintf("%s:%d", c.FTP.Host, c.FTP.Port)
+}

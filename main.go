@@ -5,13 +5,11 @@ import (
 	"time"
 
 	"github.com/gen2brain/beeep"
-	"github.com/jlaffaye/ftp"
 	"github.com/sirupsen/logrus"
 	s "github.com/tecnologer/ftp-client/settings"
 )
 
 var (
-	c          *ftp.ServerConn
 	minversion string
 	version    string
 	config     *s.Config
@@ -52,16 +50,8 @@ func main() {
 		return
 	}
 
-	url := fmt.Sprintf("%s:%d", config.FTP.Host, config.FTP.Port)
-
-	logrus.Infof("connecting to %s", url)
-	c, err = ftp.Dial(url, ftp.DialWithTimeout(5*time.Second))
-	if err != nil {
-		showError(err)
-		return
-	}
-
-	err = c.Login(config.FTP.Username, config.FTP.Password)
+	logrus.Infof("connecting to %s", config.GetURL())
+	c, err := newFtpClient(config)
 	if err != nil {
 		showError(err)
 		return
@@ -79,7 +69,7 @@ func main() {
 	logrus.Info("fetching information... please wait!")
 	resetFiles()
 
-	if err = downloadContent(config.FTP.RootPath); err != nil {
+	if err = downloadContent(c, config.FTP.RootPath); err != nil {
 		showError(err)
 		return
 	}

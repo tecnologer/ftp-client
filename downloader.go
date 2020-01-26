@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -14,17 +15,18 @@ import (
 )
 
 var (
+	fileCount  int
 	totalBytes int64
-	fileCount  int64
 )
 
 type fileError struct {
-	err  error
-	file string
+	err   error
+	file  string
+	index int
 }
 
-func downloadContent(path string) error {
-	content, err := c.List(path)
+func downloadContent(ftpClient *ftp.ServerConn, path string) error {
+	content, err := ftpClient.List(path)
 
 	if err != nil {
 		return err
@@ -39,7 +41,7 @@ func downloadContent(path string) error {
 
 		if element.Type == ftp.EntryTypeFolder {
 			// logrus.Info("new folder found ", elementPath)
-			if err = downloadContent(elementPath); err != nil {
+			if err = downloadContent(ftpClient, elementPath); err != nil {
 				return err
 			}
 		}
@@ -48,7 +50,7 @@ func downloadContent(path string) error {
 			continue
 		}
 
-		filesToDownload.Add(elementPath)
+		filesToDownload.add(elementPath)
 
 		// if err = writeFile(elementPath); err != nil {
 		// 	return err
@@ -58,7 +60,7 @@ func downloadContent(path string) error {
 }
 
 func downloadMarkedFiles() error {
-	count := filesToDownload.Len()
+	count := filesToDownload.len()
 
 	if count == 0 {
 		return fmt.Errorf("no files to download")
@@ -66,41 +68,73 @@ func downloadMarkedFiles() error {
 
 	fmt.Printf("\n >>>> found %d files <<<<\n\n", count)
 
+	workerCount := runtime.NumCPU()
 	bar := getProgressBar(count)
 	defer bar.Finish()
 
-	files := make(chan string)
+	filesChannel := []chan string{}
 	results := make(chan *fileError)
 
-	for w := 1; w <= 3; w++ {
-		go worker(w, files, results)
+	logrus.Debugf("creating %d workers\n", workerCount)
+	for w := 1; w <= workerCount; w++ {
+		files := make(chan string)
+		filesChannel = append(filesChannel, files)
+		go worker(w, files, results, w-1, bar)
 	}
 
-	for filesToDownload.HasFiles() {
-		files <- filesToDownload.GetNext()
+	//initial workers
+	for _, ch := range filesChannel {
+		if !filesToDownload.hasFiles() {
+			break
+		}
+
+		ch <- filesToDownload.getNext()
+	}
+
+	for bar.Current() < int64(count) {
 		select {
 		case result := <-results:
 			if result.err != nil {
-				logrus.Warningf("error donwloading file %s. Error: %v\n", result.file, result.err)
+				logrus.Debugf("error donwloading file %s. Error: %v\n", result.file, result.err)
 			}
+
+			file := filesToDownload.getNext()
+			if file == "" {
+				continue
+			}
+
+			filesChannel[result.index] <- file
 		}
-		bar.Increment()
 	}
-	close(files)
+
+	//close channels
+	for _, ch := range filesChannel {
+		close(ch)
+	}
 
 	return nil
 }
 
-func worker(id int, files <-chan string, results chan<- *fileError) {
+func worker(id int, files <-chan string, results chan<- *fileError, index int, bar *pb.ProgressBar) {
+	c, err := newFtpClient(config)
+	if err != nil {
+		logrus.WithError(err).Errorf("connecting worker #%d to FTP server", index)
+		return
+	}
+	defer c.Quit()
+
 	for file := range files {
+		err := writeFile(c, file)
+		bar.Increment()
 		results <- &fileError{
-			err:  writeFile(file),
-			file: file,
+			err:   err,
+			file:  file,
+			index: index,
 		}
 	}
 }
 
-func writeFile(filename string) error {
+func writeFile(c *ftp.ServerConn, filename string) error {
 	// logrus.Info("downloading file ", filename)
 	r, err := c.Retr(filename)
 	if err != nil {
