@@ -41,12 +41,23 @@ For make binary for both OS, just use `make` or `make both`
 
 `./ftpclient[.exe] -version`
 
-> INFO[0000] 0.1.4.202001 
+> INFO[0000] 0.1.4.202001
 
 ## TODO
 
 - [x] Progress bar
 - [x] Settings file
-- [ ] Improve download process
+- [x] Improve download process
 - [ ] Encode password in settings file
 - [ ] Test settings file executing from shortcut
+- [ ] Improve fetching data
+
+### Dependencies
+
+- [FTP][1]
+- [Logger][2]
+- [Progress Bar][3]
+
+[1]: github.com/jlaffaye/ftp
+[2]: github.com/sirupsen/logrus
+[3]: github.com/cheggaaa/pb
