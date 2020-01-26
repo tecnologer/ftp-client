@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -24,8 +25,8 @@ type fileError struct {
 	index int
 }
 
-func downloadContent(path string) error {
-	content, err := c.List(path)
+func downloadContent(ftpClient *ftp.ServerConn, path string) error {
+	content, err := ftpClient.List(path)
 
 	if err != nil {
 		return err
@@ -40,7 +41,7 @@ func downloadContent(path string) error {
 
 		if element.Type == ftp.EntryTypeFolder {
 			// logrus.Info("new folder found ", elementPath)
-			if err = downloadContent(elementPath); err != nil {
+			if err = downloadContent(ftpClient, elementPath); err != nil {
 				return err
 			}
 		}
@@ -67,16 +68,18 @@ func downloadMarkedFiles() error {
 
 	fmt.Printf("\n >>>> found %d files <<<<\n\n", count)
 
+	workerCount := runtime.NumCPU()
 	bar := getProgressBar(count)
 	defer bar.Finish()
 
 	filesChannel := []chan string{}
 	results := make(chan *fileError)
 
-	for w := 1; w <= 3; w++ {
+	logrus.Debugf("creating %d workers\n", workerCount)
+	for w := 1; w <= workerCount; w++ {
 		files := make(chan string)
 		filesChannel = append(filesChannel, files)
-		go worker(c, w, files, results, w-1, bar)
+		go worker(w, files, results, w-1, bar)
 	}
 
 	//initial workers
@@ -112,7 +115,14 @@ func downloadMarkedFiles() error {
 	return nil
 }
 
-func worker(c *ftp.ServerConn, id int, files <-chan string, results chan<- *fileError, index int, bar *pb.ProgressBar) {
+func worker(id int, files <-chan string, results chan<- *fileError, index int, bar *pb.ProgressBar) {
+	c, err := newFtpClient(config)
+	if err != nil {
+		logrus.WithError(err).Errorf("connecting worker #%d to FTP server", index)
+		return
+	}
+	defer c.Quit()
+
 	for file := range files {
 		err := writeFile(c, file)
 		bar.Increment()
