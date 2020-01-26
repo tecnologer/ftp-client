@@ -58,6 +58,6 @@ For make binary for both OS, just use `make` or `make both`
 - [Logger][2]
 - [Progress Bar][3]
 
-[1]: github.com/jlaffaye/ftp
-[2]: github.com/sirupsen/logrus
-[3]: github.com/cheggaaa/pb
+[1]: https://github.com/jlaffaye/ftp#goftp
+[2]: https://github.com/sirupsen/logrus#logrus-
+[3]: https://github.com/cheggaaa/pb#terminal-progress-bar-for-go
