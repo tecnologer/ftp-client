@@ -46,7 +46,7 @@ func downloadContent(ftpClient *ftp.ServerConn, path string) error {
 			}
 		}
 
-		if element.Type != ftp.EntryTypeFile {
+		if element.Type != ftp.EntryTypeFile || config.IgnoreFile(elementPath) {
 			continue
 		}
 

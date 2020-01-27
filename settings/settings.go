@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
 
 	"github.com/sirupsen/logrus"
 )
@@ -16,8 +17,10 @@ const (
 
 //Config truct for settings.json
 type Config struct {
-	FTP *FTP
-	Env *Env
+	FTP       *FTP
+	Env       *Env
+	IgnoreStr []string
+	Ignore    []*regexp.Regexp
 }
 
 //Load loads the configuration from flags or settings file
@@ -34,8 +37,9 @@ func Load() (config *Config) {
 
 		if config == nil {
 			config = &Config{
-				FTP: NewFTP("", ""),
-				Env: NewEnv(),
+				FTP:    NewFTP("", ""),
+				Env:    NewEnv(),
+				Ignore: []*regexp.Regexp{},
 			}
 		}
 	} else {
@@ -100,6 +104,15 @@ func readSettingsFile(filePath string) (*Config, error) {
 		return nil, err
 	}
 
+	for _, str := range data.IgnoreStr {
+		rg, err := regexp.Compile(str)
+		if err != nil {
+			continue
+		}
+
+		data.Ignore = append(data.Ignore, rg)
+	}
+
 	return data, nil
 }
 
@@ -136,4 +149,15 @@ func (c *Config) Save() error {
 //GetURL returns a url, joining host and port
 func (c *Config) GetURL() string {
 	return fmt.Sprintf("%s:%d", c.FTP.Host, c.FTP.Port)
+}
+
+//IgnoreFile returns true if the file path match with the regex
+func (c *Config) IgnoreFile(filePath string) bool {
+	for _, rg := range c.Ignore {
+		if rg.Match([]byte(filePath)) {
+			return true
+		}
+	}
+
+	return false
 }
