@@ -48,9 +48,14 @@ For make binary for both OS, just use `make` or `make both`
 - [x] Progress bar
 - [x] Settings file
 - [x] Improve download process
+- [x] Ignore mechanism
 - [ ] Encode password in settings file
 - [ ] Test settings file executing from shortcut
 - [ ] Improve fetching data
+- [ ] Retry failed downloads
+- [ ] GUI 
+- [ ] Support SSH
+- [ ] Upload files
 
 ### Dependencies
 
