@@ -10,8 +10,11 @@ FTP Client to create backups
 - Linux
   - Native: `go build -o ftpclient`
   - With Makefile: `make linux`
+- Darwin
+  - Native: `go build -o ftpclient`
+  - With Makefile: `make darwin`
 
-For make binary for both OS, just use `make` or `make both`
+For make binary for all OS, just use `make` or `make all`
 
 ## Usage
 
