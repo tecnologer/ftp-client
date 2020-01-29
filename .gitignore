@@ -1,6 +1,6 @@
 .vscode/
 ftpclient.exe
-ftpclient
+*ftpclient
 .bash_logout
 .bashrc
 69518/
