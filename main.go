@@ -69,7 +69,7 @@ func main() {
 	logrus.Info("fetching information... please wait!")
 	resetFiles()
 
-	if err = downloadContent(c, config.FTP.RootPath); err != nil {
+	if err = fetchDataProcess(c, config.FTP.RootPath); err != nil {
 		showError(err)
 		return
 	}
