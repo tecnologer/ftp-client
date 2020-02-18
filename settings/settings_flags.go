@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&username, "user", "", "(Required) username for credentials")
+	flag.StringVar(&username, "user", "anonymous", "(Required) username for credentials")
 	flag.StringVar(&host, "host", "", "(Required) URL to the server")
 	flag.StringVar(&password, "pwd", "", "password for credentials")
 	flag.IntVar(&port, "port", 21, "port to connect")
@@ -32,9 +32,9 @@ func init() {
 
 //Validate validates the configuration
 func validateFlags() error {
-	if username == "" {
-		return fmt.Errorf("username is required")
-	}
+	// if username == "" {
+	// 	return fmt.Errorf("username is required")
+	// }
 
 	if host == "" {
 		return fmt.Errorf("host is required")

@@ -118,10 +118,10 @@ func readSettingsFile(filePath string) (*Config, error) {
 
 //Validate validates the configuration
 func (c *Config) Validate() error {
-	if c.FTP.Username == "" {
-		flag.PrintDefaults()
-		return fmt.Errorf("username is required")
-	}
+	// if c.FTP.Username == "" {
+	// 	flag.PrintDefaults()
+	// 	return fmt.Errorf("username is required")
+	// }
 
 	if c.FTP.Host == "" {
 		flag.PrintDefaults()
