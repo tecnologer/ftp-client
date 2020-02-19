@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/gosuri/uiprogress"
 	"github.com/sirupsen/logrus"
@@ -113,13 +114,20 @@ func writeFile(c *ftp.ServerConn, filename string) error {
 	if err != nil {
 		return err
 	}
+	filePath := ""
+	pathPattern := "%s/%s"
+	if strings.HasSuffix(config.FTP.DestPath, "/") {
+		pathPattern = "%s%s"
+	}
 
-	err = os.MkdirAll(filepath.Dir("."+filename), 0700)
+	filePath = fmt.Sprintf(pathPattern, config.FTP.DestPath, filename)
+
+	err = os.MkdirAll(filepath.Dir(filePath), 0700)
 	if err != nil {
 		return err
 	}
 	totalBytes += int64(len(buf))
-	err = ioutil.WriteFile("."+filename, buf, 0644)
+	err = ioutil.WriteFile(filePath, buf, 0644)
 
 	if err != nil {
 		return err
@@ -148,5 +156,5 @@ func getProgressBar(count int) *uiprogress.Bar {
 
 	// // start bar
 	// bar.Start()
-	return uiprogress.AddBar(count) //.AppendCompleted().PrependElapsed()
+	return uiprogress.AddBar(count).AppendCompleted().PrependElapsed()
 }
