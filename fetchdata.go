@@ -2,6 +2,7 @@ package main
 
 import (
 	"runtime"
+	"strings"
 
 	"github.com/jlaffaye/ftp"
 	"github.com/sirupsen/logrus"
@@ -132,10 +133,14 @@ func fetchFoldersListWorker(id int, entry *folderWorkerInput, results chan<- *da
 	defer c.Quit()
 
 	for rc := range entry.ch {
+		if rc == nil || rc.entry == nil {
+			continue
+		}
+
 		entry.isBusy = true
 		if rc.entry.Type == ftp.EntryTypeFile {
 			filesToDownload.add(rc.String())
-		} else if rc.entry.Type == ftp.EntryTypeFolder {
+		} else if rc.entry.Type == ftp.EntryTypeFolder && !strings.HasSuffix(rc.entry.Name, ".") {
 			folderPath := rc.String()
 			content := []*ftp.Entry{}
 			content, err = c.List(folderPath)
