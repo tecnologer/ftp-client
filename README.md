@@ -18,7 +18,7 @@ For make binary for all OS, just use `make` or `make all`
 
 ## Usage
 
-`./ftpclient[.exe] <-user <username>> <-host <ftp-url>> [-pwd [password]] [-port <port>] [-path <path>] [-wait] [-store]`
+`./ftpclient[.exe] <-host <ftp-url>> [-user <username>] [-pwd [password]] [-port <port>] [-path <path>] [-dest-path <destination_path>] [-wait] [-store]`
 
 ```txt
    -host string
@@ -32,12 +32,13 @@ For make binary for all OS, just use `make` or `make all`
   -store
         store flags config into settings file
   -user string
-        (Required) username for credentials
+        username for credentials, default: anonymous
   -version
         returns the current version
   -wait
         prevents the program exit on finish process
-
+  -dest-path 
+        location to save the files in local, default: "."
 ```
 
 ## Check the version
@@ -53,8 +54,8 @@ For make binary for all OS, just use `make` or `make all`
 - [x] Improve download process
 - [x] Ignore mechanism
 - [ ] Encode password in settings file
-- [ ] Test settings file executing from shortcut
-- [ ] Improve fetching data
+- [x] Test settings file executing from shortcut (works)
+- [x] Improve fetching data
 - [ ] Retry failed downloads
 - [ ] GUI 
 - [ ] Support SSH
@@ -64,8 +65,9 @@ For make binary for all OS, just use `make` or `make all`
 
 - [FTP][1]
 - [Logger][2]
-- [Progress Bar][3]
+- [Progress Bar][4]
 
 [1]: https://github.com/jlaffaye/ftp#goftp
 [2]: https://github.com/sirupsen/logrus#logrus-
 [3]: https://github.com/cheggaaa/pb#terminal-progress-bar-for-go
+[4]: https://github.com/gosuri/uiprogress
