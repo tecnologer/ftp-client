@@ -50,6 +50,7 @@ func Load() (config *Config) {
 				Host:     host,
 				Port:     port,
 				RootPath: startPath,
+				DestPath: destPath,
 			},
 			Env: &Env{
 				NeedWait:   needWait,

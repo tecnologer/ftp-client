@@ -11,6 +11,7 @@ var (
 	host      string
 	port      int
 	startPath string
+	destPath  string
 
 	reqVersion bool
 	needWait   bool
@@ -23,6 +24,7 @@ func init() {
 	flag.StringVar(&password, "pwd", "", "password for credentials")
 	flag.IntVar(&port, "port", 21, "port to connect")
 	flag.StringVar(&startPath, "path", "/", "location of files in the server")
+	flag.StringVar(&destPath, "dest-path", ".", "location to save the files in local")
 	flag.BoolVar(&reqVersion, "version", false, "returns the current version")
 	flag.BoolVar(&needWait, "wait", false, "prevents the program exit on finish process")
 	flag.BoolVar(&store, "store", false, "store flags config into settings file")

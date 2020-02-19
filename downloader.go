@@ -8,9 +8,9 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/gosuri/uiprogress"
 	"github.com/sirupsen/logrus"
 
-	"github.com/cheggaaa/pb/v3"
 	"github.com/jlaffaye/ftp"
 )
 
@@ -25,40 +25,6 @@ type fileError struct {
 	index int
 }
 
-func downloadContent(ftpClient *ftp.ServerConn, path string) error {
-	content, err := ftpClient.List(path)
-
-	if err != nil {
-		return err
-	}
-
-	for _, element := range content {
-		elementPath := fmt.Sprintf("%s/%s", path, element.Name)
-
-		if strings.HasSuffix(elementPath, "..") || strings.HasSuffix(elementPath, ".") {
-			continue
-		}
-
-		if element.Type == ftp.EntryTypeFolder {
-			// logrus.Info("new folder found ", elementPath)
-			if err = downloadContent(ftpClient, elementPath); err != nil {
-				return err
-			}
-		}
-
-		if element.Type != ftp.EntryTypeFile || config.IgnoreFile(elementPath) {
-			continue
-		}
-
-		filesToDownload.add(elementPath)
-
-		// if err = writeFile(elementPath); err != nil {
-		// 	return err
-		// }
-	}
-	return nil
-}
-
 func downloadMarkedFiles() error {
 	count := filesToDownload.len()
 
@@ -70,7 +36,8 @@ func downloadMarkedFiles() error {
 
 	workerCount := runtime.NumCPU()
 	bar := getProgressBar(count)
-	defer bar.Finish()
+	uiprogress.Start()
+	defer uiprogress.Stop()
 
 	filesChannel := []chan string{}
 	results := make(chan *fileError)
@@ -91,7 +58,7 @@ func downloadMarkedFiles() error {
 		ch <- filesToDownload.getNext()
 	}
 
-	for bar.Current() < int64(count) {
+	for bar.Current() < count {
 		select {
 		case result := <-results:
 			if result.err != nil {
@@ -115,7 +82,7 @@ func downloadMarkedFiles() error {
 	return nil
 }
 
-func worker(id int, files <-chan string, results chan<- *fileError, index int, bar *pb.ProgressBar) {
+func worker(id int, files <-chan string, results chan<- *fileError, index int, bar *uiprogress.Bar) {
 	c, err := newFtpClient(config)
 	if err != nil {
 		logrus.WithError(err).Errorf("connecting worker #%d to FTP server", index)
@@ -125,7 +92,7 @@ func worker(id int, files <-chan string, results chan<- *fileError, index int, b
 
 	for file := range files {
 		err := writeFile(c, file)
-		bar.Increment()
+		bar.Incr()
 		results <- &fileError{
 			err:   err,
 			file:  file,
@@ -147,13 +114,20 @@ func writeFile(c *ftp.ServerConn, filename string) error {
 	if err != nil {
 		return err
 	}
+	filePath := ""
+	pathPattern := "%s/%s"
+	if strings.HasSuffix(config.FTP.DestPath, "/") {
+		pathPattern = "%s%s"
+	}
 
-	err = os.MkdirAll(filepath.Dir("."+filename), 0700)
+	filePath = fmt.Sprintf(pathPattern, config.FTP.DestPath, filename)
+
+	err = os.MkdirAll(filepath.Dir(filePath), 0700)
 	if err != nil {
 		return err
 	}
 	totalBytes += int64(len(buf))
-	err = ioutil.WriteFile("."+filename, buf, 0644)
+	err = ioutil.WriteFile(filePath, buf, 0644)
 
 	if err != nil {
 		return err
@@ -164,23 +138,23 @@ func writeFile(c *ftp.ServerConn, filename string) error {
 	return nil
 }
 
-func getProgressBar(count int) *pb.ProgressBar {
+func getProgressBar(count int) *uiprogress.Bar {
 	// create bar
-	bar := pb.New(count)
+	// bar := pb.New(count)
 
-	// refresh info every second (default 200ms)
-	// bar.SetRefreshRate(time.Second)
+	// // refresh info every second (default 200ms)
+	// // bar.SetRefreshRate(time.Second)
 
-	// force set io.Writer, by default it's os.Stderr
-	bar.SetWriter(os.Stdout)
+	// // force set io.Writer, by default it's os.Stderr
+	// bar.SetWriter(os.Stdout)
 
-	// bar will format numbers as bytes (B, KiB, MiB, etc)
-	// bar.Set(pb.Byte, true)
+	// // bar will format numbers as bytes (B, KiB, MiB, etc)
+	// // bar.Set(pb.Byte, true)
 
-	// bar use SI bytes prefix names (B, kB) instead of IEC (B, KiB)
-	bar.Set(pb.SIBytesPrefix, true)
+	// // bar use SI bytes prefix names (B, kB) instead of IEC (B, KiB)
+	// bar.Set(pb.SIBytesPrefix, true)
 
-	// start bar
-	bar.Start()
-	return bar
+	// // start bar
+	// bar.Start()
+	return uiprogress.AddBar(count).AppendCompleted().PrependElapsed()
 }
