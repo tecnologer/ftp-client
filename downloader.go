@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/gosuri/uiprogress"
 	"github.com/sirupsen/logrus"
@@ -23,40 +22,6 @@ type fileError struct {
 	err   error
 	file  string
 	index int
-}
-
-func downloadContent(ftpClient *ftp.ServerConn, path string) error {
-	content, err := ftpClient.List(path)
-
-	if err != nil {
-		return err
-	}
-
-	for _, element := range content {
-		elementPath := fmt.Sprintf("%s/%s", path, element.Name)
-
-		if strings.HasSuffix(elementPath, "..") || strings.HasSuffix(elementPath, ".") {
-			continue
-		}
-
-		if element.Type == ftp.EntryTypeFolder {
-			// logrus.Info("new folder found ", elementPath)
-			if err = downloadContent(ftpClient, elementPath); err != nil {
-				return err
-			}
-		}
-
-		if element.Type != ftp.EntryTypeFile || config.IgnoreFile(elementPath) {
-			continue
-		}
-
-		filesToDownload.add(elementPath)
-
-		// if err = writeFile(elementPath); err != nil {
-		// 	return err
-		// }
-	}
-	return nil
 }
 
 func downloadMarkedFiles() error {
