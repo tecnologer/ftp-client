@@ -7,6 +7,7 @@ import (
 	"github.com/gen2brain/beeep"
 	"github.com/sirupsen/logrus"
 	s "github.com/tecnologer/ftp-client/settings"
+	"github.com/tecnologer/ftp-client/ui"
 )
 
 var (
@@ -31,6 +32,12 @@ func init() {
 }
 
 func main() {
+
+	ui.Console()
+	// start()
+}
+
+func start() {
 	if config.Env.ReqVersion {
 		logrus.Info(version + minversion)
 		return
