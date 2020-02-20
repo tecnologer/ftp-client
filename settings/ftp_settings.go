@@ -12,11 +12,15 @@ type FTP struct {
 
 //NewFTP creates new instance for FTP settings
 func NewFTP(username, host string) *FTP {
+	if username == "" {
+		username = "anonymous"
+	}
 	return &FTP{
 		Username: username,
 		Host:     host,
 		Password: "",
 		Port:     21,
 		RootPath: "/",
+		DestPath: ".",
 	}
 }
