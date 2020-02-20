@@ -101,6 +101,26 @@ func readSettingsFile(filePath string) (*Config, error) {
 	data := new(Config)
 	err = json.Unmarshal([]byte(file), data)
 
+	if data.FTP == nil {
+		data.FTP = NewFTP("", "")
+	} else {
+		if data.FTP.DestPath == "" {
+			data.FTP.DestPath = "."
+		}
+
+		if data.FTP.RootPath == "" {
+			data.FTP.RootPath = "/"
+		}
+
+		if data.FTP.Username == "" {
+			data.FTP.Username = "anonymous"
+		}
+	}
+
+	if data.Env == nil {
+		data.Env = NewEnv()
+	}
+
 	if err != nil {
 		return nil, err
 	}
