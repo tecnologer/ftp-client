@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/tecnologer/ftp-v2/src/models"
+	notif "github.com/tecnologer/ftp-v2/src/models/notifications"
 )
 
 //Client is the struct for instance of FTP client
@@ -72,11 +73,11 @@ func (c *Client) FetchData(path string) (*models.Entry, error) {
 }
 
 //DownloadAsync downloads the file in the specified directory or the specific file
-func (c *Client) DownloadAsync(path string, recursively bool, reportCh chan *Reporter) {
+func (c *Client) DownloadAsync(path string, recursively bool, reportCh chan notif.INotification) {
 	go c.download(path, recursively, reportCh)
 }
 
-func (c *Client) download(path string, recursively bool, reportCh chan *Reporter) {
+func (c *Client) download(path string, recursively bool, reportCh chan notif.INotification) {
 	workerCount := runtime.NumCPU()
 	var wg sync.WaitGroup
 	wg.Add(workerCount)
@@ -88,12 +89,16 @@ func (c *Client) download(path string, recursively bool, reportCh chan *Reporter
 		go func(id int) {
 			cnn, err := c.getConnection()
 			if err != nil {
-				reportCh <- newReport(id, "", "getting connection", err)
+				reportCh <- notif.NewNotifError(err, &notif.Metadata{"msg": "download file, getting connection", "workerID": id})
 				return
 			}
 			for filePath := range filesCh {
 				err := c.writeFile(cnn, filePath)
-				reportCh <- newReport(id, filePath, "writting file", err)
+				if err != nil {
+					reportCh <- notif.NewNotifError(err, &notif.Metadata{"msg": "download file, writting file", "workerID": id})
+				} else {
+					reportCh <- notif.NewNotifFile(filePath, 0, notif.Downloaded, nil)
+				}
 			}
 			wg.Done()
 		}(i)
@@ -104,7 +109,7 @@ func (c *Client) download(path string, recursively bool, reportCh chan *Reporter
 	wg.Wait()
 }
 
-func (c *Client) downloadPath(rootPath string, recursively bool, filesCh chan<- string, reportCh chan *Reporter) error {
+func (c *Client) downloadPath(rootPath string, recursively bool, filesCh chan<- string, reportCh chan notif.INotification) error {
 	entry, err := c.FetchData(rootPath)
 
 	if err != nil {
@@ -124,10 +129,10 @@ func (c *Client) downloadPath(rootPath string, recursively bool, filesCh chan<- 
 		}
 
 		if subEntry.Type == ftp.EntryTypeFolder && isValidFolder(subEntry.Name) {
-			reportCh <- newReport(-1, path, "new folder identified", nil)
+			reportCh <- notif.NewNotifFolder(path, notif.Discovered, nil)
 			err := c.downloadPath(path, recursively, filesCh, reportCh)
 			if err != nil {
-				reportCh <- newReport(-1, path, "downloading path recursively", err)
+				reportCh <- notif.NewNotifError(err, &notif.Metadata{"path": path, "msg": "downloading path recursively"})
 			}
 		}
 	}

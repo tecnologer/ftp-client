@@ -11,23 +11,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-//Reporter is a struct to report status
-type Reporter struct {
-	ID   int
-	File string
-	Msg  string
-	Err  error
-}
-
-func newReport(id int, file, msg string, err error) *Reporter {
-	return &Reporter{
-		ID:   id,
-		File: file,
-		Msg:  msg,
-		Err:  err,
-	}
-}
-
 func (c *Client) writeFile(cnn *ftp.ServerConn, filename string) error {
 	res, err := cnn.Retr(filename)
 	if err != nil {
