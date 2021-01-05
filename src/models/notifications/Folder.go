@@ -4,6 +4,7 @@ type FolderStatus byte
 
 const (
 	Discovered FolderStatus = iota
+	Created
 )
 
 //Folder notification struct

@@ -9,6 +9,7 @@ import (
 
 	"github.com/jlaffaye/ftp"
 	"github.com/pkg/errors"
+	notif "github.com/tecnologer/ftp-v2/src/models/notifications"
 )
 
 func (c *Client) writeFile(cnn *ftp.ServerConn, filename string) error {
@@ -34,7 +35,8 @@ func (c *Client) writeFile(cnn *ftp.ServerConn, filename string) error {
 	if err != nil {
 		return errors.Wrap(err, "writing file")
 	}
-
+	c.Notifications <- notif.NewNotifFile(filePath, uint64(len(buf)), notif.Downloaded, nil)
+	c.DownloadStats <- uint64(len(buf))
 	return nil
 }
 

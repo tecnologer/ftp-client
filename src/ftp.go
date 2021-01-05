@@ -15,27 +15,31 @@ import (
 
 //Client is the struct for instance of FTP client
 type Client struct {
-	URL        string
-	Username   string
-	Password   string
-	Entries    *models.Entries
-	Timeout    time.Duration
-	DestPath   string
-	RootPath   string
-	host       string
-	port       int
-	connection *ftp.ServerConn
+	URL           string
+	Username      string
+	Password      string
+	Entries       *models.Entries
+	Timeout       time.Duration
+	DestPath      string
+	RootPath      string
+	host          string
+	port          int
+	connection    *ftp.ServerConn
+	Notifications chan notif.INotification
+	DownloadStats chan uint64
 }
 
 //NewClient create new instance for FTPClient
 func NewClient(host, dest string) *Client {
 	return &Client{
-		URL:      fmt.Sprintf("%s:21", host),
-		host:     host,
-		Timeout:  5 * time.Second,
-		Entries:  new(models.Entries),
-		DestPath: dest,
-		RootPath: "/",
+		URL:           fmt.Sprintf("%s:21", host),
+		host:          host,
+		Timeout:       5 * time.Second,
+		Entries:       new(models.Entries),
+		DestPath:      dest,
+		RootPath:      "/",
+		Notifications: make(chan notif.INotification),
+		DownloadStats: make(chan uint64),
 	}
 }
 
@@ -73,11 +77,14 @@ func (c *Client) FetchData(path string) (*models.Entry, error) {
 }
 
 //DownloadAsync downloads the file in the specified directory or the specific file
-func (c *Client) DownloadAsync(path string, recursively bool, reportCh chan notif.INotification) {
-	go c.download(path, recursively, reportCh)
+func (c *Client) DownloadAsync(path string, recursively bool) {
+	go c.download(path, recursively)
 }
 
-func (c *Client) download(path string, recursively bool, reportCh chan notif.INotification) {
+func (c *Client) download(path string, recursively bool) {
+	startTime := time.Now()
+	go c.registerStats()
+	defer c.notifyComplete(startTime)
 	workerCount := runtime.NumCPU()
 	var wg sync.WaitGroup
 	wg.Add(workerCount)
@@ -89,27 +96,27 @@ func (c *Client) download(path string, recursively bool, reportCh chan notif.INo
 		go func(id int) {
 			cnn, err := c.getConnection()
 			if err != nil {
-				reportCh <- notif.NewNotifError(err, &notif.Metadata{"msg": "download file, getting connection", "workerID": id})
+				c.Notifications <- notif.NewNotifError(err, &notif.Metadata{"msg": "download file, getting connection", "workerID": id})
 				return
 			}
+			defer cnn.Quit()
+
 			for filePath := range filesCh {
 				err := c.writeFile(cnn, filePath)
 				if err != nil {
-					reportCh <- notif.NewNotifError(err, &notif.Metadata{"msg": "download file, writting file", "workerID": id})
-				} else {
-					reportCh <- notif.NewNotifFile(filePath, 0, notif.Downloaded, nil)
+					c.Notifications <- notif.NewNotifError(err, &notif.Metadata{"msg": "download file, writting file", "workerID": id})
 				}
 			}
 			wg.Done()
 		}(i)
 	}
 
-	c.downloadPath(path, recursively, filesCh, reportCh)
+	c.downloadPath(path, recursively, filesCh)
 	close(filesCh)
 	wg.Wait()
 }
 
-func (c *Client) downloadPath(rootPath string, recursively bool, filesCh chan<- string, reportCh chan notif.INotification) error {
+func (c *Client) downloadPath(rootPath string, recursively bool, filesCh chan<- string) error {
 	entry, err := c.FetchData(rootPath)
 
 	if err != nil {
@@ -129,10 +136,10 @@ func (c *Client) downloadPath(rootPath string, recursively bool, filesCh chan<- 
 		}
 
 		if subEntry.Type == ftp.EntryTypeFolder && isValidFolder(subEntry.Name) {
-			reportCh <- notif.NewNotifFolder(path, notif.Discovered, nil)
-			err := c.downloadPath(path, recursively, filesCh, reportCh)
+			c.Notifications <- notif.NewNotifFolder(path, notif.Discovered, nil)
+			err := c.downloadPath(path, recursively, filesCh)
 			if err != nil {
-				reportCh <- notif.NewNotifError(err, &notif.Metadata{"path": path, "msg": "downloading path recursively"})
+				c.Notifications <- notif.NewNotifError(err, &notif.Metadata{"path": path, "msg": "downloading path recursively"})
 			}
 		}
 	}
@@ -165,6 +172,40 @@ func (c *Client) updateData(path string, data ...*ftp.Entry) *models.Entry {
 	}
 
 	return newEntry
+}
+
+func (c *Client) notifyComplete(timestamp time.Time) {
+	metadata := &notif.Metadata{
+		"timestamp": timestamp,
+		"duration":  time.Since(timestamp),
+		"status":    "completed",
+	}
+
+	for len(c.DownloadStats) > 0 {
+		time.Sleep(100 * time.Millisecond)
+	}
+	close(c.DownloadStats)
+	time.Sleep(100 * time.Millisecond)
+
+	c.Notifications <- notif.NewNotif(notif.GenericType, metadata)
+	c.DownloadStats = make(chan uint64)
+}
+
+func (c *Client) registerStats() {
+	totalFiles := 0
+	var sizeDownloaded uint64 = 0
+
+	for downloaded := range c.DownloadStats {
+		totalFiles++
+		sizeDownloaded += downloaded
+	}
+
+	metadata := &notif.Metadata{
+		"totalFiles":     totalFiles,
+		"sizeDownloaded": sizeDownloaded,
+	}
+
+	c.Notifications <- notif.NewNotif(notif.GenericType, metadata)
 }
 
 //isValidFolder returns true if is not current or previous folder, this to prevent infinity recursivity

@@ -10,6 +10,8 @@ const (
 	FolderType = "Folder"
 	//ErrorType notification type for errors
 	ErrorType = "Error"
+	//GenericType generic notification type
+	GenericType = "Generic"
 )
 
 //Notification generic struct
