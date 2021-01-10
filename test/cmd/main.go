@@ -25,7 +25,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	client.DownloadAsync("/Tecnologerland/", true)
+
+	//client.DownloadAsync("/Tecnologerland/data", true)
+
+	entry, err := client.GetEntries("/Tecnologerland/data")
+
 	var metadata notif.Metadata
 	for notification := range client.Notifications {
 		fields := logrus.Fields{
