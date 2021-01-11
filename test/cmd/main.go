@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	ftp "github.com/tecnologer/ftp-v2/src"
-	notif "github.com/tecnologer/ftp-v2/src/models/notifications"
+	"github.com/tecnologer/ftp-v2/src/models"
 	"github.com/tecnologer/go-secrets"
 	"github.com/tecnologer/go-secrets/config"
 )
@@ -28,45 +29,59 @@ func main() {
 
 	//client.DownloadAsync("/Tecnologerland/data", true)
 
-	entry, err := client.GetEntries("/Tecnologerland/data")
+	entry, err := client.GetEntriesRecursively("/Tecnologerland")
+	// entry, err = client.GetEntries("/Tecnologerland/datapacks")
 
-	var metadata notif.Metadata
-	for notification := range client.Notifications {
-		fields := logrus.Fields{
-			"Type":     notification.GetType(),
-			"HasError": notification.HasError(),
-		}
+	// var metadata notif.Metadata
+	// for notification := range client.Notifications {
+	// 	fields := logrus.Fields{
+	// 		"Type":     notification.GetType(),
+	// 		"HasError": notification.HasError(),
+	// 	}
 
-		if notification.HasMetadata() {
-			metadata = *notification.GetMetadata()
-			for key, val := range metadata {
-				if key == "sizeDownloaded" {
-					size, _ := val.(uint64)
-					fields[key] = byteCountDecimal(size)
-				} else {
-					fields[key] = val
-				}
-			}
+	// 	if notification.HasMetadata() {
+	// 		metadata = *notification.GetMetadata()
+	// 		for key, val := range metadata {
+	// 			if key == "sizeDownloaded" {
+	// 				size, _ := val.(uint64)
+	// 				fields[key] = byteCountDecimal(size)
+	// 			} else {
+	// 				fields[key] = val
+	// 			}
+	// 		}
 
-			if v, ok := metadata["status"]; ok && v == "completed" {
-				logrus.Infof("completed in %v", metadata["duration"])
-				break
-			}
-		}
+	// 		if v, ok := metadata["status"]; ok && v == "completed" {
+	// 			logrus.Infof("completed in %v", metadata["duration"])
+	// 			break
+	// 		}
+	// 	}
 
-		logrus.WithFields(fields).Info("new notification")
-	}
+	// 	logrus.WithFields(fields).Info("new notification")
+	// }
 	// if err != nil {
 	// 	panic(err)
 	// }
-
-	// for _, entry := range newEntry.Entries {
+	// logrus.WithFields(logrus.Fields{
+	// 	"Name":   entry.Name,
+	// 	"Target": entry.Target,
+	// 	"Type":   entry.Type,
+	// 	"Size":   entry.Size,
+	// 	"Time":   entry.Time,
+	// }).Info("entry")
+	printTree(entry, 0)
+	// _type := ""
+	// for _, child := range entry.Entries {
+	// 	if child.Type == models.EntryTypeFile {
+	// 		_type = "File"
+	// 	} else if child.Type == models.EntryTypeFolder {
+	// 		_type = "Foder"
+	// 	}
 	// 	logrus.WithFields(logrus.Fields{
-	// 		"Name":   entry.Name,
-	// 		"Target": entry.Target,
-	// 		"Type":   entry.Type,
-	// 		"Size":   entry.Size,
-	// 		"Time":   entry.Time,
+	// 		"Name":   child.Name,
+	// 		"Target": child.Target,
+	// 		"Type":   _type,
+	// 		"Size":   child.Size,
+	// 		"Time":   child.Time,
 	// 	}).Info("entry")
 	// }
 
@@ -83,4 +98,33 @@ func byteCountDecimal(b uint64) string {
 		exp++
 	}
 	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
+}
+
+func printTree(folder *models.TreeElement, deep int) {
+	if folder == nil {
+		return
+	}
+
+	under := "-"
+	markFolder := ""
+	markFile := ""
+	if deep > 0 {
+		under = "|_"
+		markFolder = strings.Repeat("|", deep)
+		markFile = strings.Repeat("|", deep+1)
+
+	}
+
+	formatFolder := fmt.Sprintf("%s%%%ds %%s\n", markFolder, deep*2)
+	formatFile := fmt.Sprintf("%s%%%ds %%s\n", markFile, (deep+1)*2)
+	fmt.Printf(formatFolder, under, folder.Name)
+
+	for _, entry := range folder.Entries {
+		if entry.Type == models.EntryTypeFolder {
+			printTree(entry, deep+1)
+			continue
+		}
+
+		fmt.Printf(formatFile, "|_", entry.Name)
+	}
 }

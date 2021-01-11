@@ -16,7 +16,7 @@ type Client struct {
 	URL           string
 	Username      string
 	Password      string
-	Entries       *models.Entries
+	Entries       *models.TreeElement
 	PlainEntries  []string
 	Timeout       time.Duration
 	DestPath      string
@@ -37,7 +37,7 @@ func NewClient(host, dest string) *Client {
 		URL:           fmt.Sprintf("%s:21", host),
 		host:          host,
 		Timeout:       5 * time.Second,
-		Entries:       new(models.Entries),
+		Entries:       models.NewTreeElement(),
 		DestPath:      dest,
 		RootPath:      "/",
 		Notifications: make(chan notif.INotification),
@@ -78,21 +78,40 @@ func (c *Client) RefreshEntriesAsync(rootPath string) {
 }
 
 //GetEntries updates the list of data from the server
-func (c *Client) GetEntries(rootPath string) (*models.Entry, error) {
-	// if c.connection == nil {
-	// 	return nil, errors.Errorf("fetching data: the connection is required")
-	// }
+func (c *Client) GetEntries(path string) (*models.TreeElement, error) {
+	if c.connection == nil {
+		return nil, errors.Errorf("fetching data: the connection is required")
+	}
 
-	// _, err := getEntries(c.connection, rootPath)
-	// if err != nil {
-	// 	return nil, errors.Wrap(err, "Fetching data: listing")
-	// }
+	content, err := getEntries(c.connection, path)
+	if err != nil {
+		return nil, errors.Wrap(err, "Fetching data: listing")
+	}
 
-	// // parent := c.Entries.GetEntries(rootPath)
+	return c.Entries.AddFtpEntries(path, content)
+}
 
-	// parentEntry := models.MkdirParent(nil, models.GetPathLevels(rootPath))
-	//models.AddEntries(parentEntry, models.ParseFTPEntries(content))
-	return nil, nil
+//GetEntriesRecursively updates the list of data from the server in the specific path,
+//updates also the files in the children folders
+func (c *Client) GetEntriesRecursively(path string) (*models.TreeElement, error) {
+	folder, err := c.GetEntries(path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting entries recursively for %s", path)
+	}
+
+	for _, entry := range folder.Entries {
+		if entry.Type != ftp.EntryTypeFolder {
+			continue
+		}
+
+		child, err := c.GetEntriesRecursively(path + "/" + entry.Name)
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting entries recursively for %s", path)
+		}
+		entry = child
+	}
+
+	return folder, nil
 }
 
 //DownloadAsync downloads the file in the specified directory or the specific file
