@@ -19,8 +19,6 @@ type Client struct {
 	Entries       *models.TreeElement
 	PlainEntries  []string
 	Timeout       time.Duration
-	DestPath      string
-	RootPath      string
 	Notifications chan notif.INotification
 	DownloadStats chan uint64
 
@@ -32,14 +30,12 @@ type Client struct {
 }
 
 //NewClient create new instance for FTPClient
-func NewClient(host, dest string) *Client {
+func NewClient(host string) *Client {
 	return &Client{
 		URL:           fmt.Sprintf("%s:21", host),
 		host:          host,
 		Timeout:       5 * time.Second,
 		Entries:       models.NewTreeElement(),
-		DestPath:      dest,
-		RootPath:      "/",
 		Notifications: make(chan notif.INotification),
 		DownloadStats: make(chan uint64),
 		plainEntryCh:  make(chan string),
@@ -115,8 +111,8 @@ func (c *Client) GetEntriesRecursively(path string) (*models.TreeElement, error)
 }
 
 //DownloadAsync downloads the file in the specified directory or the specific file
-func (c *Client) DownloadAsync(path string, recursively bool) {
-	go c.download(path, recursively)
+func (c *Client) DownloadAsync(path, destPath string, recursively bool) {
+	go c.download(path, destPath, recursively)
 }
 
 func (c *Client) getConnection() (*ftp.ServerConn, error) {

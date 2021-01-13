@@ -20,7 +20,7 @@ func main() {
 		panic(err)
 	}
 
-	client := ftp.NewClient(ftpSecrets.GetString("host"), "./Downloads")
+	client := ftp.NewClient(ftpSecrets.GetString("host"))
 	err = client.Connect(ftpSecrets.GetString("username"), ftpSecrets.GetString("password"))
 
 	if err != nil {

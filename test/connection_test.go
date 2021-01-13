@@ -19,7 +19,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	client = ftp.NewClient(ftpSecrets.GetString("host"), ".")
+	client = ftp.NewClient(ftpSecrets.GetString("host"))
 }
 
 func TestConnection(t *testing.T) {

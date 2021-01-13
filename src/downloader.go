@@ -16,7 +16,7 @@ import (
 	notif "github.com/tecnologer/ftp-v2/src/models/notifications"
 )
 
-func (c *Client) download(path string, recursively bool) {
+func (c *Client) download(path, destPath string, recursively bool) {
 	startTime := time.Now()
 
 	defer c.notifyDownloadComplete(startTime)
@@ -37,7 +37,7 @@ func (c *Client) download(path string, recursively bool) {
 			defer cnn.Quit()
 
 			for filePath := range filesCh {
-				err := c.writeFile(cnn, filePath)
+				err := c.writeFile(cnn, filePath, destPath)
 				if err != nil {
 					c.Notifications <- notif.NewNotifError(err, &notif.Metadata{"msg": "download file, writting file", "workerID": id})
 				}
@@ -51,7 +51,7 @@ func (c *Client) download(path string, recursively bool) {
 	wg.Wait()
 }
 
-func (c *Client) writeFile(cnn *ftp.ServerConn, filename string) error {
+func (c *Client) writeFile(cnn *ftp.ServerConn, filename, destPath string) error {
 	res, err := cnn.Retr(filename)
 	if err != nil {
 		return errors.Wrap(err, "write file: retriving file")
@@ -64,7 +64,7 @@ func (c *Client) writeFile(cnn *ftp.ServerConn, filename string) error {
 		return errors.Wrap(err, "write file: reading buffer")
 	}
 
-	filePath := c.getDestPath(filename)
+	filePath := c.getDestPath(filename, destPath)
 	err = os.MkdirAll(filepath.Dir(filePath), 0700)
 	if err != nil {
 		return errors.Wrap(err, "write file: creating directories")
@@ -110,13 +110,13 @@ func (c *Client) downloadPath(rootPath string, recursively bool, filesCh chan<- 
 	return nil
 }
 
-func (c *Client) getDestPath(filename string) string {
+func (c *Client) getDestPath(filename, destPath string) string {
 	pathPattern := "%s/%s"
-	if strings.HasSuffix(c.DestPath, "/") || strings.HasPrefix(filename, "/") {
+	if strings.HasSuffix(destPath, "/") || strings.HasPrefix(filename, "/") {
 		pathPattern = "%s%s"
 	}
 
-	filePath := fmt.Sprintf(pathPattern, c.DestPath, filename)
+	filePath := fmt.Sprintf(pathPattern, destPath, filename)
 
 	return filePath
 }
