@@ -1,21 +1,20 @@
-package models
+package files
 
 import (
 	"fmt"
 	p "path"
 	"time"
 
-	"github.com/jlaffaye/ftp"
 	"github.com/pkg/errors"
-)
-
-const (
-	EntryTypeFile   = ftp.EntryTypeFile
-	EntryTypeFolder = ftp.EntryTypeFolder
+	"github.com/tecnologer/ftp"
 )
 
 type TreeElement struct {
-	*ftp.Entry
+	Name    string
+	Target  string // target of symbolic link
+	Type    EntryType
+	Size    uint64
+	Time    time.Time
 	Entries []*TreeElement
 }
 
@@ -47,6 +46,24 @@ func (t *TreeElement) AddFtpEntries(path string, entries []*ftp.Entry) (parent *
 	return parent, nil
 }
 
+//AddElements inserts the tree elements in the specific path
+func (t *TreeElement) AddElements(path string, entries []*TreeElement) (parent *TreeElement, err error) {
+	levels := GetPathLevels(path)
+	parent, _ = getBranch(t, levels)
+
+	//build the entries hierarchy
+	if parent == nil {
+		parent = MkdirParent(t, levels)
+		parent, err = getBranch(t, levels)
+		if err != nil {
+			return nil, errors.Wrap(err, "inserting FTP entries")
+		}
+	}
+
+	parent.Entries = entries
+	return parent, nil
+}
+
 //GetFile returns the entry type file in the specific path
 func (t *TreeElement) GetFile(path string) (*TreeElement, error) {
 	file := p.Base(path)
@@ -61,7 +78,7 @@ func (t *TreeElement) GetFile(path string) (*TreeElement, error) {
 	}
 
 	for _, entry := range parent.Entries {
-		if entry.Name == file && entry.Type == ftp.EntryTypeFile {
+		if entry.Name == file && entry.Type == EntryTypeFile {
 			return entry, nil
 		}
 	}
@@ -113,13 +130,11 @@ func countFileInBranch(parent *TreeElement, levels []string) (int, error) {
 //Mkdir creates an entry type folder with the specific name
 func Mkdir(name string) *TreeElement {
 	return &TreeElement{
-		Entry: &ftp.Entry{
-			Name:   name,
-			Target: name,
-			Type:   ftp.EntryTypeFolder,
-			Size:   0,
-			Time:   time.Now().UTC(),
-		},
+		Name:    name,
+		Target:  name,
+		Type:    EntryTypeFolder,
+		Size:    0,
+		Time:    time.Now().UTC(),
 		Entries: make([]*TreeElement, 0),
 	}
 }
@@ -155,7 +170,11 @@ func ParseFTPEntries(ftpEntries []*ftp.Entry) []*TreeElement {
 
 	for i, ftpEntry := range ftpEntries {
 		entries[i] = &TreeElement{
-			Entry:   ftpEntry,
+			Name:    ftpEntry.Name,
+			Target:  ftpEntry.Target,
+			Type:    EntryType(ftpEntry.Type),
+			Size:    ftpEntry.Size,
+			Time:    ftpEntry.Time,
 			Entries: make([]*TreeElement, 0),
 		}
 	}
