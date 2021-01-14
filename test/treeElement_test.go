@@ -4,26 +4,19 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/jlaffaye/ftp"
-	"github.com/tecnologer/ftp-v2/src/models"
+	"github.com/tecnologer/ftp-v2/src/models/files"
 )
 
 func TestMkdir(t *testing.T) {
-	output := &models.TreeElement{
-		Entry: &ftp.Entry{
-			Name: "/",
-		},
-		Entries: []*models.TreeElement{
+	output := &files.TreeElement{
+		Name: "/",
+		Entries: []*files.TreeElement{
 			{
-				Entry: &ftp.Entry{
-					Name: "test",
-				},
-				Entries: []*models.TreeElement{
+				Name: "test",
+				Entries: []*files.TreeElement{
 					{
-						Entry: &ftp.Entry{
-							Name: "folder1",
-						},
-						Entries: []*models.TreeElement{},
+						Name:    "folder1",
+						Entries: []*files.TreeElement{},
 					},
 				},
 			},
@@ -32,8 +25,8 @@ func TestMkdir(t *testing.T) {
 
 	input := "/test/folder1/"
 
-	levels := models.GetPathLevels(input)
-	result := models.MkdirParent(nil, levels)
+	levels := files.GetPathLevels(input)
+	result := files.MkdirParent(nil, levels)
 
 	if !compareTree(output, result) {
 		t.Fail()
@@ -41,32 +34,22 @@ func TestMkdir(t *testing.T) {
 }
 
 func TestGetDirectory(t *testing.T) {
-	input := &models.TreeElement{
-		Entry: &ftp.Entry{
-			Name: "/",
-		},
-		Entries: []*models.TreeElement{
+	input := &files.TreeElement{
+		Name: "/",
+		Entries: []*files.TreeElement{
 			{
-				Entry: &ftp.Entry{
-					Name: "test",
-				},
-				Entries: []*models.TreeElement{
+				Name: "test",
+				Entries: []*files.TreeElement{
 					{
-						Entry: &ftp.Entry{
-							Name: "folder1",
-						},
-						Entries: []*models.TreeElement{},
+						Name:    "folder1",
+						Entries: []*files.TreeElement{},
 					},
 					{
-						Entry: &ftp.Entry{
-							Name: "folder2",
-						},
-						Entries: []*models.TreeElement{
+						Name: "folder2",
+						Entries: []*files.TreeElement{
 							{
-								Entry: &ftp.Entry{
-									Name: "subfolder1",
-								},
-								Entries: []*models.TreeElement{},
+								Name:    "subfolder1",
+								Entries: []*files.TreeElement{},
 							},
 						},
 					},
@@ -76,23 +59,17 @@ func TestGetDirectory(t *testing.T) {
 	}
 
 	// output := &models.Tree{
-	// 	Entry: &ftp.Entry{
-	// 		Name: "folder2",
-	// 	},
+	// 		Name: "folder2",/ 	},
 	// 	Entries: []*models.Tree{
 	// 		{
-	// 			Entry: &ftp.Entry{
-	// 				Name: "subfolder1",
-	// 			},
+	// 				Name: "subfolder1",/ 			},
 	// 			Entries: []*models.Tree{},
 	// 		},
 	// 	},
 	// }
-	output := &models.TreeElement{
-		Entry: &ftp.Entry{
-			Name: "subfolder1",
-		},
-		Entries: []*models.TreeElement{},
+	output := &files.TreeElement{
+		Name:    "subfolder1",
+		Entries: []*files.TreeElement{},
 	}
 	inputPath := "/test/folder2/subfolder1"
 
@@ -108,7 +85,7 @@ func TestGetDirectory(t *testing.T) {
 	}
 }
 
-func compareTree(left, rigth *models.TreeElement) bool {
+func compareTree(left, rigth *files.TreeElement) bool {
 	if left.Entries == nil && rigth.Entries != nil {
 		fmt.Printf("entries nil")
 		return false

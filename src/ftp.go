@@ -7,7 +7,7 @@ import (
 
 	"github.com/jlaffaye/ftp"
 	"github.com/pkg/errors"
-	"github.com/tecnologer/ftp-v2/src/models"
+	"github.com/tecnologer/ftp-v2/src/models/files"
 	notif "github.com/tecnologer/ftp-v2/src/models/notifications"
 )
 
@@ -16,7 +16,7 @@ type Client struct {
 	URL           string
 	Username      string
 	Password      string
-	Entries       *models.TreeElement
+	Entries       *files.TreeElement
 	PlainEntries  []string
 	Timeout       time.Duration
 	Notifications chan notif.INotification
@@ -35,7 +35,7 @@ func NewClient(host string) *Client {
 		URL:           fmt.Sprintf("%s:21", host),
 		host:          host,
 		Timeout:       5 * time.Second,
-		Entries:       models.NewTreeElement(),
+		Entries:       files.NewTreeElement(),
 		Notifications: make(chan notif.INotification),
 		DownloadStats: make(chan uint64),
 		plainEntryCh:  make(chan string),
@@ -74,7 +74,7 @@ func (c *Client) RefreshEntriesAsync(rootPath string) {
 }
 
 //GetEntries updates the list of data from the server
-func (c *Client) GetEntries(path string) (*models.TreeElement, error) {
+func (c *Client) GetEntries(path string) (*files.TreeElement, error) {
 	if c.connection == nil {
 		return nil, errors.Errorf("fetching data: the connection is required")
 	}
@@ -89,14 +89,14 @@ func (c *Client) GetEntries(path string) (*models.TreeElement, error) {
 
 //GetEntriesRecursively updates the list of data from the server in the specific path,
 //updates also the files in the children folders
-func (c *Client) GetEntriesRecursively(path string) (*models.TreeElement, error) {
+func (c *Client) GetEntriesRecursively(path string) (*files.TreeElement, error) {
 	folder, err := c.GetEntries(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting entries recursively for %s", path)
 	}
 
 	for _, entry := range folder.Entries {
-		if entry.Type != ftp.EntryTypeFolder {
+		if entry.Type != files.EntryTypeFolder {
 			continue
 		}
 

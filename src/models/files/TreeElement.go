@@ -5,8 +5,8 @@ import (
 	p "path"
 	"time"
 
+	"github.com/jlaffaye/ftp"
 	"github.com/pkg/errors"
-	"github.com/tecnologer/ftp"
 )
 
 type TreeElement struct {

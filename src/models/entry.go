@@ -1,9 +1,8 @@
 package models
 
 import (
-	"strings"
-
 	"github.com/jlaffaye/ftp"
+	"github.com/tecnologer/ftp-v2/src/models/files"
 )
 
 //Entries is the group of entries in specific path
@@ -21,7 +20,7 @@ func (e *Entries) GetEntries(path string) []*Entry {
 		return nil
 	}
 
-	return getEntries(GetPathLevels(path), (*e)[0].Entries)
+	return getEntries(files.GetPathLevels(path), (*e)[0].Entries)
 }
 
 func getEntries(branches []string, entries []*Entry) []*Entry {
@@ -40,22 +39,6 @@ func getEntries(branches []string, entries []*Entry) []*Entry {
 	}
 
 	return getEntries(branches[1:], entry.Entries)
-}
-
-//GetPathLevels returns array with the branches name of the path tree
-func GetPathLevels(path string) []string {
-	branches := []string{}
-	if !strings.HasPrefix(path, "/") {
-		branches = append(branches, "/")
-	}
-
-	if strings.HasSuffix(path, "/") {
-		path = path[:len(path)-1]
-	}
-
-	branches = append(branches, strings.Split(path, "/")...)
-	branches[0] = "/"
-	return branches
 }
 
 // //Mkdir creates an entry type folder with the specific name
