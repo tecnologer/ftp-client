@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	ftp "github.com/tecnologer/ftp-v2/src"
-	ftpM "github.com/tecnologer/ftp-v2/src/models"
+	"github.com/tecnologer/ftp-v2/src/models/files"
 )
 
 var (
@@ -40,14 +40,15 @@ func main() {
 	config = new(ftpConfig)
 
 	http.HandleFunc("/api/connect", connectClient)
-	http.HandleFunc("/api/file", getFiles)
+	http.HandleFunc("/api/file/ftp", getFtpFiles)
+	http.HandleFunc("/api/file/local", getLocalFiles)
 
 	host := fmt.Sprintf(":%d", *port)
 	fmt.Printf("listening on %s\n", host)
 	log.Fatal(http.ListenAndServe(host, nil))
 }
 
-func getFiles(w http.ResponseWriter, res *http.Request) {
+func getFtpFiles(w http.ResponseWriter, res *http.Request) {
 	setHeaders(&w)
 	var err error
 	pathQ, exists := res.URL.Query()["path"]
@@ -67,7 +68,7 @@ func getFiles(w http.ResponseWriter, res *http.Request) {
 		}
 	}
 	path := pathQ[0]
-	var files *ftpM.TreeElement
+	var files *files.TreeElement
 	if recursively {
 		files, err = client.GetEntriesRecursively(path)
 	} else {
@@ -84,6 +85,44 @@ func getFiles(w http.ResponseWriter, res *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(newMsgResf("error parsing to json: %v", err))
+		return
+	}
+	w.Write(body)
+}
+
+func getLocalFiles(w http.ResponseWriter, res *http.Request) {
+	setHeaders(&w)
+	var err error
+	pathQ, exists := res.URL.Query()["path"]
+
+	if !exists || len(pathQ) == 0 {
+		w.WriteHeader(http.StatusPreconditionFailed)
+		w.Write(newMsgRes("get local files: the file path is required"))
+		return
+	}
+
+	recursivelyQ, exists := res.URL.Query()["recursively"]
+	recursively := !exists || len(recursivelyQ) == 0
+	if len(recursivelyQ) > 0 {
+		recursively, err = strconv.ParseBool(strings.ToLower(recursivelyQ[0]))
+		if err != nil {
+			recursively = true
+		}
+	}
+	path := pathQ[0]
+	files, err := files.ListFiles(path)
+	fmt.Println(recursively)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(newMsgResf("get local files: error getting local files: %v", err))
+		return
+	}
+
+	body, err := json.Marshal(files)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(newMsgResf("get local files: error parsing to json: %v", err))
 		return
 	}
 	w.Write(body)
