@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gorilla/mux"
 	ftp "github.com/tecnologer/ftp-v2/src"
 	"github.com/tecnologer/ftp-v2/src/models/files"
 )
@@ -38,14 +39,17 @@ type fileReq struct {
 func main() {
 	flag.Parse()
 	config = new(ftpConfig)
-
-	http.HandleFunc("/api/connect", connectClient)
-	http.HandleFunc("/api/file/ftp", getFtpFiles)
-	http.HandleFunc("/api/file/local", getLocalFiles)
+	r := mux.NewRouter()
+	// r = r.PathPrefix("/api/").Subrouter()
+	r.HandleFunc("/api/connect", connectClient).Methods(http.MethodPost)
+	
+	r.HandleFunc("file/ftp", getFtpFiles)
+	r.HandleFunc("file/local", getLocalFiles)
 
 	host := fmt.Sprintf(":%d", *port)
 	fmt.Printf("listening on %s\n", host)
-	log.Fatal(http.ListenAndServe(host, nil))
+	
+	log.Fatal(http.ListenAndServe(host, r))
 }
 
 func getFtpFiles(w http.ResponseWriter, res *http.Request) {
@@ -138,6 +142,7 @@ func connectClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println(string(resBody))
 	err = json.Unmarshal(resBody, config)
 	if err != nil {
 		w.WriteHeader(http.StatusPreconditionFailed)

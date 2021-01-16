@@ -1,23 +1,20 @@
-import logo from './logo.svg';
-import './App.css';
+import "./App.css";
+import FilesContainer from "./components/filesContainer";
+import InputCn from "./components/inputConnection";
+import bodyParser from "body-parser";
 
 function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+        <h1>FTP Client</h1>
       </header>
+      <div>
+        <InputCn />
+      </div>
+      <div>
+        <FilesContainer />
+      </div>
     </div>
   );
 }
