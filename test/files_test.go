@@ -10,7 +10,7 @@ import (
 func TestListFiles(t *testing.T) {
 	path := "/home/tecnologer/java"
 
-	files, err := files.ListFiles(path)
+	files, err := files.ListFiles(path, false)
 
 	if err != nil {
 		t.Fail()
