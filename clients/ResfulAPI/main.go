@@ -110,8 +110,7 @@ func getLocalFiles(w http.ResponseWriter, res *http.Request) {
 		}
 	}
 	path := pathQ[0]
-	files, err := files.ListFiles(path)
-	fmt.Println(recursively)
+	files, err := files.ListFiles(path, recursively)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
